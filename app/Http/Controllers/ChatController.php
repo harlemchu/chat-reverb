@@ -12,7 +12,7 @@ class ChatController extends Controller
     public function index()
     {
         // Load existing messages with user info
-        $messages = Message::with('user')->latest()->take(50)->get()->reverse();
+        $messages = Message::with('user')->latest()->take(50)->get()->reverse()->values();
 
         return Inertia::render('Chat', [
             'messages' => $messages,
