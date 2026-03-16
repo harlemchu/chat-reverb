@@ -46,40 +46,70 @@ export default function ChatBox({ messages: initialMessages }: { messages: Messa
     };
 
     return (
-        <div className="flex flex-col h-screen max-w-2xl mx-auto border rounded shadow">
-            {/* Messages list */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={`p-2 rounded max-w-xs ${msg.user.id === auth.user.id
-                            ? 'ml-auto bg-blue-500 text-white'
-                            : 'bg-gray-200 text-gray-800'
-                            }`}
-                    >
-                        <div className="text-xs font-bold mb-1">{msg.user.name}</div>
-                        <div>{msg.content}</div>
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
 
-            {/* Message input */}
-            <form onSubmit={handleSubmit} className="border-t p-4 flex gap-2">
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 border rounded px-3 py-2"
-                />
-                <button
-                    type="submit"
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                    Send
-                </button>
-            </form>
+        // <div className="flex flex-col h-screen max-w-2xl mx-auto border rounded shadow">
+        <div>
+            <div className="py-12">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div className="p-6 bg-white border-b border-gray-200">
+                            {/* <h2 className="text-2xl font-bold mb-4">{room.name}</h2> */}
+
+                            <div className="messages-container h-96 overflow-y-auto border p-4 mb-4">
+                                {messages.map((msg) => (
+                                    <div
+                                        key={msg.id}
+                                        className={`mb-2 flex ${msg.user?.id === auth.user.id
+                                            ? 'justify-end'
+                                            : 'justify-start'
+                                            }`}
+                                    >{msg.user?.id !== auth.user.id && (
+                                        <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                                            {msg.user.name?.trim()?.charAt(0)?.toUpperCase()}
+                                        </div>
+                                    )}
+                                        <div
+                                            className={`rounded-lg px-4 py-2 max-w-xs ${msg.user?.id === auth.user.id
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-gray-200'
+                                                }`}
+                                        >
+                                            <div className="font-bold text-sm">
+                                                {msg.user.name}
+                                            </div>
+                                            <div>{msg.content}</div>
+                                            <div className="text-xs opacity-75">
+                                                {new Date(msg.created_at).toLocaleTimeString()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <form onSubmit={handleSubmit}>
+                                <div className="flex space-x-2">
+                                    <input
+                                        type="text"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)} //{(e) => setData('message', e.target.value)}
+                                        className="flex-1 border rounded px-3 py-2"
+                                        placeholder="Type your message..."
+                                    // disabled={processing}
+                                    />
+                                    <button
+                                        type="submit"
+                                        // disabled={processing}
+                                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                                    >
+                                        Send
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
