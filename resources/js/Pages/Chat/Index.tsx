@@ -9,7 +9,7 @@ import ContactHeader from '@/Components/Chat/ContactHeader';
 import axios from 'axios';
 import ConversationList from '@/Components/Chat/ConversationList';
 import GroupCreationModal from '@/Components/Chat/GroupCreationModal';
-import { Conversation, Message } from '@/Components/Chat/types';
+import { Conversation, Message } from '@/types';
 
 // Extend Window to include our global Echo instance and userId
 declare global {

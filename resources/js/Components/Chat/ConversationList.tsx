@@ -1,8 +1,8 @@
 // resources/js/Components/Chat/ConversationList.tsx
 
 import React, { useState, useMemo } from 'react';
-import { Conversation } from './types';
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { Conversation } from '@/types';
 
 interface Props {
     conversations: Conversation[];

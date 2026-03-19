@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
-import { Conversation } from './types';
+import { Conversation } from '@/types';
 
 interface Props {
     conversation: Conversation;
