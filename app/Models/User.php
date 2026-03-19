@@ -46,4 +46,22 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Conversations the user belongs to.
+     */
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class)
+            ->withPivot('last_read_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Messages sent by the user.
+     */
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
 }

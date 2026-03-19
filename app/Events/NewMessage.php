@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Models\Message;
+use App\Models\ChatRoom;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -15,18 +16,23 @@ class NewMessage implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public Message $message;
+    protected $room;
 
-    public function __construct(Message $message)
+    public function __construct(Message $message, ChatRoom $room)
     {
         $this->message = $message;
+        $this->room = $room;
     }
 
     // Broadcast on a private channel named 'chat'
-    public function broadcastOn(): array
+    public function broadcastOn() //: array
     {
-        return [
-            new PrivateChannel('chat'),
-        ];
+        // return [
+        //     new PrivateChannel('chat'),
+        // ];
+
+        return new Channel('chat.room.' . $this->room->id);
+
     }
 
     // Customize the broadcast name (optional)
