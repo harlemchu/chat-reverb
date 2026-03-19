@@ -27,6 +27,7 @@ export interface User {
     name: string;
     avatar?: string | null;
     email: string;
+    email_verified_at?: string;
     online?: boolean; // we'll manage via presence channels
     last_seen?: string; // optional
 }
