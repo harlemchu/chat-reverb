@@ -5,19 +5,13 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-// const token = document.head.querySelector('meta[name="csrf-token"]');
-const token = document.head.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
-if (token) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
-} else {
-    console.error('CSRF token not found');
-}
 declare global {
     interface Window {
         Pusher: typeof Pusher;
         Echo: any;
     }
 }
+console.log(window.axios.defaults.headers.common['X-CSRF-TOKEN']);
 window.Pusher = Pusher;
 
 window.Echo = new Echo({
