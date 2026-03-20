@@ -6,13 +6,6 @@
 //     created_at: string;
 // }
 
-export interface ChatRoom {
-    id: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-}
-
 // export interface Message {
 //     id: number;
 //     user_id: number;
@@ -22,6 +15,13 @@ export interface ChatRoom {
 //     updated_at: string;
 //     user: User;
 // }
+export interface ChatRoom {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface User {
     id: number;
     name: string;

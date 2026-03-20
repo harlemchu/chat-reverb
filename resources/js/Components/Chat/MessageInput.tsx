@@ -21,6 +21,8 @@ export default function MessageInput({ onSend }: Props) {
         <form onSubmit={handleSubmit} className="flex items-center space-x-2">
             <input
                 type="text"
+                id="message-input"
+                name="message"
                 value={body}
                 onChange={e => setBody(e.target.value)}
                 placeholder="Type your message here..."
