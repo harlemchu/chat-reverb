@@ -1,6 +1,6 @@
 // resources/js/Pages/Chat/Index.tsx
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import MessageList from '@/Components/Chat/MessageList';
@@ -9,7 +9,7 @@ import ContactHeader from '@/Components/Chat/ContactHeader';
 import axios from 'axios';
 import ConversationList from '@/Components/Chat/ConversationList';
 import GroupCreationModal from '@/Components/Chat/GroupCreationModal';
-import { Conversation, Message } from '@/types';
+import { Conversation, Message, User } from '@/types';
 
 // Extend Window to include our global Echo instance and userId
 declare global {
@@ -27,6 +27,7 @@ export default function Index() {
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); const { props } = usePage();
 
     const currentUser = props.auth.user.id; // { id, name, email }
+    const [users, setUsers] = useState<User[]>([]);
 
     // Add a function to refresh conversations after group creation
     const refreshConversations = useCallback(() => {
@@ -36,6 +37,10 @@ export default function Index() {
     useEffect(() => {
         axios.get('/chat/conversations')
             .then(res => setConversations(res.data))
+            .catch(err => console.error(err));
+
+        axios.get('/chat/users')
+            .then(res => setUsers(res.data))
             .catch(err => console.error(err));
     }, []);
 
@@ -50,13 +55,26 @@ export default function Index() {
         setLoading(true);
         axios.get(`/chat/conversations/${activeConversation.id}/messages`)
             .then(res => {
-                console.log('Messages received:', res.data); setMessages(res.data)
+                console.log('Messages received:', res.data);
+                setMessages(res.data)
             })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
 
         // Mark conversation as read (optional)
-        axios.post(`/chat/conversations/${activeConversation.id}/read`);
+        axios.post(`/chat/conversations/${activeConversation.id}/read`)
+            .then(() => {
+                // Immediately reset unread count in the conversation list
+                setConversations(prev =>
+                    prev.map(c =>
+                        c.id === activeConversation.id
+                            ? { ...c, unread_count: 0 }
+                            : c
+                    )
+                );
+            })
+            .catch(err => console.error('Failed to mark as read', err));
+
 
         // Subscribe to real‑time new messages
         const channel = window.Echo.private(`conversation.${activeConversation.id}`)
@@ -72,15 +90,23 @@ export default function Index() {
                 setMessages(prev => [...prev, newMessage]);
 
                 // Also update the last message in the conversation list
+
                 setConversations(prev =>
-                    prev.map(c =>
-                        c.id === activeConversation.id
-                            ? { ...c, last_message: newMessage, unread_count: 0 }
-                            : c
+                    prev.map(conv =>
+                        conv.id === e.conversation_id && conv.id !== activeConversation?.id
+                            ? { ...conv, unread_count: (conv.unread_count || 0) + 1 }
+                            : conv
+                    )
+                );
+                // Update users list: set conversation_id for this user
+                setUsers(prev =>
+                    prev.map(u =>
+                        u.id === window.userId
+                            ? { ...u, conversation_id: newMessage.id, last_message: null, unread_count: 0 }
+                            : u
                     )
                 );
             });
-
         return () => {
             channel.stopListening('.message.sent');
             window.Echo.leave(`conversation.${activeConversation.id}`);
@@ -135,7 +161,7 @@ export default function Index() {
     useEffect(() => {
         if (!window.userId) return;
 
-        const channel = window.Echo.private(`user.${window.userId}`)
+        const userchannel = window.Echo.private(`user.${window.userId}`)
             .listen('.conversation.updated', (e: any) => {
                 // e contains: conversation_id, last_message, unread_count
                 setConversations(prevConversations =>
@@ -152,7 +178,7 @@ export default function Index() {
             })
 
             .subscribed(() => {
-                console.log('✅ Successfully subscribed to user channel');
+                console.log('✅ Successfully subscribed to user channel user.' + window.userId);
             })
             .error((error: any) => {
                 console.error('❌ Subscription error:', error);
@@ -167,20 +193,37 @@ export default function Index() {
                     console.log('Adding new conversation:', e.conversation);
                     return [...prev, e.conversation];
                 });
-            });
+            })
+            .listen('.new-message', (e: any) => {
+                // e contains conversation_id and message data
+                if (activeConversation?.id === e.conversation_id) {
+                    // Already listening on the conversation channel, so we'll get it there.
+                    // You can choose to ignore here, or add the message if needed.
+                    return;
+                }
 
+                // Otherwise, increment unread count for that conversation
+                setConversations(prev =>
+                    prev.map(c =>
+                        c.id === e.conversation_id
+                            ? { ...c, unread_count: (c.unread_count || 0) + 1 }
+                            : c
+                    )
+                );
+            });
         return () => {
             window.Echo.leave(`user.${window.userId}`);
         };
-    }, []);
+    }, [activeConversation]);
     return (
         <AuthenticatedLayout>
             <Head title="Chat" />
-            <div className="flex h-[calc(100vh-64px)] bg-gray-100"> {/* adjust height based on your layout */}
+            <div className="flex h-[calc(100vh-64px)] bg-gray-100 mx-20"> {/* adjust height based on your layout */}
                 {/* Left Sidebar */}
                 <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
                     <ConversationList
                         conversations={conversations}
+                        users={users}
                         activeId={activeConversation?.id}
                         onSelect={setActiveConversation}
                         onOpenGroupModal={() => setIsGroupModalOpen(true)} // new prop

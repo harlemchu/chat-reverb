@@ -20,6 +20,9 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.tsx'),
         ),
     setup({ el, App, props }) {
+        if (props.initialPage.props.auth?.user) {
+            window.userId = props.initialPage.props.auth.user.id;
+        }
         const root = createRoot(el);
 
         root.render(<App {...props} />);
