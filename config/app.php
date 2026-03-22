@@ -160,6 +160,6 @@ return [
         App\Providers\AuthServiceProvider::class,
         App\Providers\BroadcastServiceProvider::class,  // you can uncomment later
         App\Providers\EventServiceProvider::class,
-        // App\Providers\RouteServiceProvider::class,
+        App\Providers\RouteServiceProvider::class,
     ],
 ];
