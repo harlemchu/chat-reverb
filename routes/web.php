@@ -8,6 +8,9 @@ use Inertia\Inertia;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatRoomController;
 
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Http\Request;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -43,6 +46,28 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/groups', [ChatController::class, 'createGroup']);
     Route::post('/chat/groups/{conversation}/add-users', [ChatController::class, 'addUsersToGroup']);
     Route::get('/chat/users', [ChatController::class, 'getUsers']); // for selecting participants
+    Route::post('/chat/start-private', [ChatController::class, 'startPrivateConversation']);
+
+    // Custom broadcast auth endpoint
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return Broadcast::auth($request);
+    })->middleware(['web', 'auth']);
+    // Route::post('/broadcasting/auth', function (Request $request) {
+    //     $channelName = $request->input('channel_name');
+    //     $user = $request->user();
+
+    //     if (!$user) {
+    //         return response()->json(['error' => 'Unauthenticated'], 403);
+    //     }
+
+    //     if ($channelName === 'online') {
+    //         // Return the auth string using Pusher's format
+    //         $auth = $user->id . ':' . hash_hmac('sha256', $channelName, config('broadcasting.connections.reverb.secret'));
+    //         return response()->json(['auth' => $auth]);
+    //     }
+
+    //     return response()->json(['error' => 'Unauthorized'], 403);
+    // })->middleware('auth');
 });
 
 require __DIR__ . '/auth.php';

@@ -1,38 +1,29 @@
 <?php
 
-namespace App\Events;
-
 use App\Models\Conversation;
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
+
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
-// app/Events/UserAddedToGroup.php
-class UserAddedToGroup implements ShouldBroadcast
+class PrivateConversationCreated implements ShouldBroadcastNow
 {
-    use Dispatchable, InteractsWithSockets;
-
     public $conversation;
-    public $addedUserId;
 
-    public function __construct(Conversation $conversation, int $addedUserId)
+    public function __construct(Conversation $conversation)
     {
-        $this->conversation = $conversation->load('users');
-        $this->addedUserId = $addedUserId;
+        $this->conversation = $conversation->load('users', 'last_message');
     }
 
     public function broadcastOn()
     {
-        return new PrivateChannel('user.' . $this->addedUserId);
+        // Send to the other user only (not the creator)
+        $otherUser = $this->conversation->users->firstWhere('id', '!=', $this->conversation->users->firstWhere('pivot.user_id', auth()->id())?->id ?? auth()->id());
+        return new PrivateChannel('user.' . $otherUser->id);
     }
 
     public function broadcastAs()
     {
-        return 'user.added.to.group';
+        return 'private.conversation.created';
     }
 
     public function broadcastWith()

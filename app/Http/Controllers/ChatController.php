@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Events\MessageSent;
-use App\Events\NewMessage;
+use App\Events\NewMessageNotification;
 use App\Events\ConversationUpdated;
 use App\Events\UserAddedToGroup;
 use App\Models\ChatRoom;
@@ -32,25 +32,25 @@ class ChatController extends Controller
     public function store(Request $request, ChatRoom $room)
     {
         // return response()->json(['message' => 'Route works!']);
-        $request->validate([
-            'content' => 'required|string|max:1000',
-        ]);
+        // $request->validate([
+        //     'content' => 'required|string|max:1000',
+        // ]);
 
-        $message = Message::create([
-            'user_id' => $request->user()->id,
-            // 'content' => $request->content,'content' => $request->input('content'),
-            'room_id' => $room->id,
-            'content' => $request->post('content'),
-        ]);
+        // $message = Message::create([
+        //     'user_id' => $request->user()->id,
+        //     // 'content' => $request->content,'content' => $request->input('content'),
+        //     'room_id' => $room->id,
+        //     'content' => $request->post('content'),
+        // ]);
 
-        // Load the user relation for broadcasting
-        $message->load('user');
+        // // Load the user relation for broadcasting
+        // $message->load('user');
 
-        // Broadcast the event
-        broadcast(new NewMessage($message, $room))->toOthers();
+        // // Broadcast the event
+        // broadcast(new NewMessage($message, $room))->toOthers();
 
-        // Return the message as JSON for the frontend (optional)
-        return response()->json($message);
+        // // Return the message as JSON for the frontend (optional)
+        // return response()->json($message);
     }
     // app/Http/Controllers/ChatController.php
     public function getConversations()
@@ -99,6 +99,11 @@ class ChatController extends Controller
         $this->authorize('view', $conversation);
 
         $conversation->markAsReadForUser($request->user()->id);
+        // For each other participant, broadcast a conversation update
+        $otherUsers = $conversation->users->where('id', '!=', $request->user()->id);
+        foreach ($otherUsers as $user) {
+            broadcast(new ConversationUpdated($conversation, $user->id))->toOthers();
+        }
 
         return response()->json(['status' => 'ok']);
     }
@@ -134,6 +139,10 @@ class ChatController extends Controller
 
         // Broadcast to others in the conversation (excluding the sender)
         broadcast(new MessageSent($message))->toOthers();
+
+        // Broadcast to each participant's private channel (for notifications & unread counts)
+        broadcast(new NewMessageNotification($message))->toOthers();
+
         // For each other participant, broadcast a conversation update
         $otherUsers = $conversation->users->where('id', '!=', $request->user()->id);
         foreach ($otherUsers as $user) {
@@ -151,6 +160,11 @@ class ChatController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
+        // For each other participant, broadcast a conversation update
+        $otherUsers = $conversation->users->where('id', '!=', $request->user()->id);
+        foreach ($otherUsers as $user) {
+            broadcast(new ConversationUpdated($conversation, $user->id))->toOthers();
+        }
         return response()->json($messages);
     }
     public function getUsers(Request $request)
@@ -186,6 +200,39 @@ class ChatController extends Controller
         }
         \Log::info('Broadcasting UserAddedToGroup', ['new_user' => $newUserId, 'group' => $group->id]);
         return response()->json($group->load('users'), 201);
+    }
+    public function startPrivateConversation(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $currentUser = $request->user();
+        $otherUserId = $validated['user_id'];
+
+        if ($otherUserId == $currentUser->id) {
+            return response()->json(['error' => 'You cannot start a conversation with yourself'], 422);
+        }
+
+        // Find or create the private conversation
+        $conversation = $currentUser->conversations()
+            ->where('type', 'private')
+            ->whereHas('users', fn($q) => $q->where('user_id', $otherUserId))
+            ->first();
+
+        if (!$conversation) {
+            $conversation = Conversation::create(['type' => 'private']);
+            $conversation->users()->attach([
+                $currentUser->id => ['last_read_at' => now()],
+                $otherUserId => ['last_read_at' => now()],
+            ]);
+        }
+
+        $conversation->load('users');
+        $conversation->last_message = $conversation->messages()->latest()->first();
+        $conversation->unread_count = 0;
+
+        return response()->json($conversation);
     }
     public function addUsersToGroup(Request $request, Conversation $conversation)
     {

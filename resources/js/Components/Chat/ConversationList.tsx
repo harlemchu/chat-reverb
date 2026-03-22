@@ -4,6 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Conversation, User } from '@/types';
 import { UserGroupIcon } from '@heroicons/react/24/solid';
+import { useOnlineUsers } from '@/hooks/useOnlineUsers';
+import ConfirmPassword from '@/Pages/Auth/ConfirmPassword';
 
 interface Props {
     conversations: Conversation[];
@@ -15,26 +17,10 @@ interface Props {
 
 export default function ConversationList({ conversations, users, activeId, onSelect, onOpenGroupModal }: Props) {
     const [search, setSearch] = useState('');
+    const onlineUsers = useOnlineUsers();
+    const isUserOnline = (userId: number) => onlineUsers.includes(userId);
+    // Filter groups and people
 
-    // const { groups, people } = useMemo(() => {
-    //     const filtered = conversations.filter(conv => {
-    //         if (!search) return true;
-    //         // Determine searchable name
-    //         let name = '';
-    //         if (conv.type === 'group') {
-    //             name = conv.name || '';
-    //         } else {
-    //             const other = conv.users.find(u => u.id !== window.userId);
-    //             name = other?.name || '';
-    //         }
-    //         return name.toLowerCase().includes(search.toLowerCase());
-    //     });
-
-    //     return {
-    //         groups: filtered.filter(c => c.type === 'group'),
-    //         people: filtered.filter(c => c.type === 'private'),
-    //     };
-    // }, [conversations, search]);
     const { groups } = useMemo(() => {
         const filtered = conversations.filter(conv => {
             if (!search) return true;
@@ -48,6 +34,7 @@ export default function ConversationList({ conversations, users, activeId, onSel
             groups: filtered,
         };
     }, [conversations, search]);
+
     const { People } = useMemo(() => {
         const filtered = users.filter(conv => {
             if (!search) return true;
@@ -59,6 +46,7 @@ export default function ConversationList({ conversations, users, activeId, onSel
             People: filtered,
         };
     }, [users, search]);
+
     // Helper to get display name for a conversation
     const getDisplayName = (conv: Conversation): string => {
         if (conv.type === 'group') {
@@ -101,28 +89,28 @@ export default function ConversationList({ conversations, users, activeId, onSel
                     <span>Create Group</span>
                 </button>
             </div>
+            {/* Group Section */}
+            {groups.map(conv => {
+                // Get all user IDs in this group (must be loaded from backend)
+                const memberIds = conv.users.map(u => u.id);
+                // Count how many are online
+                const onlineCount = memberIds.filter(id => onlineUsers.includes(id)).length;
+                // Optionally show the count in the display name
+                const displayWithCount = onlineCount > 0 ? `${conv.name} (${onlineCount} online)` : conv.name;
 
-            {/* Groups Section */}
-            {groups.length > 0 && (
-                <div className="px-4 py-2">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                        Groups
-                    </h3>
-                    <ul>
-                        {groups.map(conv => (
-                            <ConversationItem
-                                key={conv.id}
-                                type={conv.type}
-                                displayName={getDisplayName(conv)}
-                                lastMessage={getLastMessage(conv)}
-                                unreadCount={conv.unread_count}
-                                isActive={conv.id === activeId}
-                                onClick={() => onSelect(conv)}
-                            />
-                        ))}
-                    </ul>
-                </div>
-            )}
+                return (
+                    <ConversationItem
+                        key={conv.id}
+                        type={conv.type}
+                        displayName={getDisplayName(conv)}
+                        lastMessage={getLastMessage(conv)}
+                        unreadCount={conv.unread_count}
+                        isActive={conv.id === activeId}
+                        isOnline={false}   // not used for groups
+                        onClick={() => onSelect(conv)}
+                    />
+                );
+            })}
 
             {/* People Section */}
             {People.length > 0 && (
@@ -131,28 +119,38 @@ export default function ConversationList({ conversations, users, activeId, onSel
                         People
                     </h3>
                     <ul>
-                        {People.map((conv) => (
-                            <li key={conv.id} className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                                {/* Avatar Placeholder */}
-                                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-bold mr-3">
-                                    {conv.name.charAt(0).toUpperCase()}
-                                </div>
-
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-baseline">
-                                        <h4 className="font-medium text-gray-900 truncate">{conv.name}</h4>
-                                        {/* Optional timestamp */}
-                                        <span className="text-xs text-gray-400">2:30 PM</span>
+                        {People.map((user) => {
+                            const isOnline = onlineUsers.includes(user.id);
+                            return (
+                                <li
+                                    key={user.id}
+                                    className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                                >
+                                    {/* Avatar Placeholder */}
+                                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-bold mr-3">
+                                        {user.name.charAt(0).toUpperCase()}
                                     </div>
-                                </div>
 
-                                {/* Online indicator (optional) */}
-                                {conv.online && (
-                                    <span className="w-2 h-2 bg-green-500 rounded-full ml-2"></span>
-                                )}
-                            </li>
-                        ))}
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline">
+                                            <h4 className="font-medium text-gray-900 truncate">{user.name}</h4>
+                                            {/* Optional timestamp */}
+                                            <span className="text-xs text-gray-400">2:30 PM</span>
+                                        </div>
+                                        {/* Optional last message preview */}
+                                        {user.last_seen && (
+                                            <p className="text-sm text-gray-500 truncate">{user.last_seen}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Online indicator */}
+                                    {isOnline && (
+                                        <span className="w-2 h-2 bg-green-500 rounded-full ml-2"></span>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             )}
@@ -167,6 +165,7 @@ function ConversationItem({
     lastMessage,
     unreadCount,
     isActive,
+    isOnline, // new prop
     onClick,
 }: {
     type: string;
@@ -174,6 +173,7 @@ function ConversationItem({
     lastMessage: string;
     unreadCount: number;
     isActive: boolean;
+    isOnline: boolean;
     onClick: () => void;
 }) {
     return (
@@ -185,6 +185,9 @@ function ConversationItem({
             <div className="flex-1 min-w-0 border p-2">
                 <div className="flex justify-between items-baseline">
                     <div className="flex items-center gap-2">
+                        {isOnline && (
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        )}
                         {type === 'group' ? (
                             <UserGroupIcon className="inline-block h-10 w-10 mr-3" />
                         ) : (
