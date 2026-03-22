@@ -4,9 +4,9 @@ namespace App\Events;
 
 use App\Models\Message;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
-class NewMessageNotification implements ShouldBroadcastNow
+class NewMessageNotification implements ShouldBroadcast
 {
     public $message;
 

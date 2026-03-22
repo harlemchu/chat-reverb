@@ -3,9 +3,9 @@
 use App\Models\Conversation;
 
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
-class PrivateConversationCreated implements ShouldBroadcastNow
+class PrivateConversationCreated implements ShouldBroadcast
 {
     public $conversation;
 
