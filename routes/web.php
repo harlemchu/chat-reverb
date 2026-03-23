@@ -52,6 +52,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/broadcasting/auth', function (Request $request) {
         return Broadcast::auth($request);
     })->middleware(['web', 'auth']);
+
+    // routes/web.php
+    Route::get('/chat/online-users', function () {
+        return response()->json(\App\Models\User::where('online', true)->pluck('id'));
+    })->middleware('auth');
+
     // Route::post('/broadcasting/auth', function (Request $request) {
     //     $channelName = $request->input('channel_name');
     //     $user = $request->user();

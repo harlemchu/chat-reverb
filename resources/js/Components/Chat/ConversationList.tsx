@@ -1,11 +1,12 @@
 // resources/js/Components/Chat/ConversationList.tsx
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, ReactNode } from 'react';
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Conversation, User } from '@/types';
 import { UserGroupIcon } from '@heroicons/react/24/solid';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import ConfirmPassword from '@/Pages/Auth/ConfirmPassword';
+import { timeAgo } from '@/utils/timeAge';
 
 interface Props {
     conversations: Conversation[];
@@ -59,16 +60,21 @@ export default function ConversationList({ conversations, users, activeId, onSel
     // Helper to get last message preview
     const getLastMessage = (conv: Conversation) => {
         if (!conv.last_message) return 'No messages yet';
+        const limitText = (text: string, maxLength: number = 100) => {
+            if (text.length <= maxLength) return text;
+            return text.slice(0, maxLength) + '…';
+        };
         const senderName = conv.last_message.user_id === window.userId
             ? 'You'
             : conv.last_message.user.name.split(' ')[0];
-        return `${senderName}: ${conv.last_message.content}`;
+        // return `${conv.last_message.content}`;// ${timeAgo(conv.last_message?.created_at, 'en')}`;
+        return (<> <span className="font-block text-black-500">{senderName}</span> : <span className="inline-block text-blue-600 font-bold">{limitText(conv.last_message.content, 10)}</span><span className="text-gray-500 text-xs ml-2 italic">{timeAgo(conv.last_message.created_at)}</span> </>)
     };
 
     return (
         <div className="flex flex-col h-full overflow-y-auto">
             {/* Search and Create Group */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-gray-200 rounded-md">
                 <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
@@ -104,9 +110,10 @@ export default function ConversationList({ conversations, users, activeId, onSel
                         type={conv.type}
                         displayName={getDisplayName(conv)}
                         lastMessage={getLastMessage(conv)}
+                        convo={(conv)}
                         unreadCount={conv.unread_count}
                         isActive={conv.id === activeId}
-                        isOnline={false}   // not used for groups
+                        isOnline={isUserOnline(conv.id)}   // not used for groups
                         onClick={() => onSelect(conv)}
                     />
                 );
@@ -124,7 +131,7 @@ export default function ConversationList({ conversations, users, activeId, onSel
                             return (
                                 <li
                                     key={user.id}
-                                    className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                                    className="flex items-center border mx-1 p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                                 >
                                     {/* Avatar Placeholder */}
                                     <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-bold mr-3">
@@ -163,6 +170,7 @@ function ConversationItem({
     type,
     displayName,
     lastMessage,
+    convo,
     unreadCount,
     isActive,
     isOnline, // new prop
@@ -170,7 +178,8 @@ function ConversationItem({
 }: {
     type: string;
     displayName: string;
-    lastMessage: string;
+    lastMessage: string | ReactNode;
+    convo: Conversation;
     unreadCount: number;
     isActive: boolean;
     isOnline: boolean;
@@ -179,10 +188,10 @@ function ConversationItem({
     return (
         <li
             onClick={onClick}
-            className={`flex items-center p-23 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-blue-50' : 'hover:bg-gray-100'
+            className={`flex items-center border mx-1 p-23 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-blue-50' : 'hover:bg-gray-100'
                 }`}
         >
-            <div className="flex-1 min-w-0 border p-2">
+            <div className="flex-1 min-w-0 p-2">
                 <div className="flex justify-between items-baseline">
                     <div className="flex items-center gap-2">
                         {isOnline && (
@@ -203,7 +212,8 @@ function ConversationItem({
                         </span>
                     )}
                 </div>
-                <p className="text-sm text-gray-500 truncate">{lastMessage}</p>
+                <p className="text-sm ml-10 pl-5">{lastMessage}</p>
+                {/* <p className="text-sm text-gray-500 truncate ml-10 pl-5">{lastMessage}</p> */}
             </div>
         </li>
     );

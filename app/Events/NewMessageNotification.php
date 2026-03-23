@@ -17,7 +17,7 @@ class NewMessageNotification implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        // Send to each participant's private channel (excluding the sender)
+        // Broadcast to each participant's private channel (except sender)
         $recipients = $this->message->conversation->users
             ->pluck('id')
             ->filter(fn($id) => $id !== $this->message->user_id);
@@ -27,14 +27,14 @@ class NewMessageNotification implements ShouldBroadcast
 
     public function broadcastAs()
     {
-        return 'new.message';
+        return 'new-message';   // frontend listens to '.new-message'
     }
 
     public function broadcastWith()
     {
         return [
             'id' => $this->message->id,
-            'content' => $this->message->body,
+            'content' => $this->message->content,
             'conversation_id' => $this->message->conversation_id,
             'user' => [
                 'id' => $this->message->user->id,

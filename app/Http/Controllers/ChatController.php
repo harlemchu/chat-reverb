@@ -56,27 +56,37 @@ class ChatController extends Controller
     public function getConversations()
     {
         $user = auth()->user();
-
         $conversations = $user->conversations()
-            ->with([
-                'users',
-                'messages' => function ($q) {
-                    $q->latest()->limit(1); // last message
-                }
-            ])
+            ->with(['users', 'messages' => fn($q) => $q->latest()->limit(1)])
             ->get()
             ->map(function ($conversation) use ($user) {
-                // Compute unread count efficiently
                 $conversation->unread_count = $conversation->unreadCountForUser($user->id);
-
-                // Attach the last message (already loaded)
                 $conversation->last_message = $conversation->messages->first();
-
-                // Remove the messages collection to keep response clean
                 unset($conversation->messages);
-
                 return $conversation;
             });
+
+
+        // $conversations = $user->conversations()
+        //     ->with([
+        //         'users',
+        //         'messages' => function ($q) {
+        //             $q->latest()->limit(1); // last message
+        //         }
+        //     ])
+        //     ->get();
+        // ->map(function ($conversation) use ($user) {
+        //     // Compute unread count efficiently
+        //     $conversation->unread_count = $conversation->unreadCountForUser($user->id);
+
+        //     // Attach the last message (already loaded)
+        //     $conversation->last_message = $conversation->messages->first();
+
+        //     // Remove the messages collection to keep response clean
+        //     unset($conversation->messages);
+
+        //     return $conversation;
+        // });
         // ->map(function ($conversation) use ($user) {
         //     // Count unread messages
         //     $lastRead = $conversation->pivot->last_read_at;
@@ -144,10 +154,10 @@ class ChatController extends Controller
         broadcast(new NewMessageNotification($message))->toOthers();
 
         // For each other participant, broadcast a conversation update
-        $otherUsers = $conversation->users->where('id', '!=', $request->user()->id);
-        foreach ($otherUsers as $user) {
-            broadcast(new ConversationUpdated($conversation, $user->id))->toOthers();
-        }
+        // $otherUsers = $conversation->users->where('id', '!=', $request->user()->id);
+        // foreach ($otherUsers as $user) {
+        //     broadcast(new ConversationUpdated($conversation, $user->id))->toOthers();
+        // }
         return response()->json($message);
     }
 

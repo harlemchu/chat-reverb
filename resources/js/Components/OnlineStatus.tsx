@@ -1,17 +1,8 @@
-import { useEffect, useRef } from 'react';
+// resources/js/Components/OnlineStatus.tsx
+import { useEffect } from 'react';
 
 export default function OnlineStatus() {
-    const channelRef = useRef<any>(null);
-
     useEffect(() => {
-        // Only if Echo is defined and user is authenticated (we assume component only mounts when authenticated)
-        if (!window.Echo) return;
-
-        // Leave any existing channel before joining (just in case)
-        if (channelRef.current) {
-            window.Echo.leave('online');
-        }
-
         let currentOnline: number[] = [];
 
         const channel = window.Echo.join('online')
@@ -30,13 +21,8 @@ export default function OnlineStatus() {
                 window.dispatchEvent(new CustomEvent('online-users-updated', { detail: { onlineUsers: [...currentOnline] } }));
             });
 
-        channelRef.current = channel;
-
         return () => {
-            if (channelRef.current) {
-                window.Echo.leave('online');
-                channelRef.current = null;
-            }
+            window.Echo.leave('online');
         };
     }, []);
 

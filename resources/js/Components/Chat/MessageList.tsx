@@ -1,4 +1,5 @@
 import { Message } from '@/types';
+import { timeAgo } from '@/utils/timeAge';
 import React, { useEffect, useRef } from 'react';
 
 interface Props {
@@ -51,10 +52,11 @@ export default function MessageList({ messages, loading, currentUserId }: Props)
                                 className={`text-xs mt-1 ${isMine ? 'text-blue-100' : 'text-gray-500'
                                     } text-right`}
                             >
-                                {new Date(msg.created_at).toLocaleTimeString([], {
+                                {timeAgo(msg.created_at)}
+                                {/* {new Date(msg.created_at).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
-                                })}
+                                })} */}
                             </p>
                         </div>
                     </div>
